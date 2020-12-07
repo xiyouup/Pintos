@@ -355,8 +355,9 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-	bool isY = (thread_current()->priority > new_priority);
-  thread_current ()->priority = new_priority;
+	bool isY = (thread_current()->oldPriority > new_priority);
+  thread_current ()->oldPriority = new_priority;
+	lockPriority(thread_current());
 	if(isY){
 		thread_yield();
 	}
@@ -490,6 +491,9 @@ init_thread (struct thread *t, const char *name, int priority)
 
 
 	t->sleepCount = -1;
+	t->oldPriority = priority;
+	t->lockWait = NULL;
+	list_init(&t->lockOwn);
 	
 
   old_level = intr_disable ();
@@ -635,7 +639,28 @@ bool threadCmpPri(const struct list_elem *e1, const struct list_elem *e2, void *
 }
 
 
+bool lockCmpPri(const struct list_elem *e1, const struct list_elem *e2, void *aux)
+{
+  (void)aux;
+  return (list_entry(e1, struct lock, elem)->semaphore.priority) < (list_entry(e2, struct lock, elem)->semaphore.priority);
+}
 
+
+bool lockPriority(struct thread *cur_t)
+{ 
+  if(list_empty(&(cur_t->lockOwn))){
+    cur_t->priority = cur_t->oldPriority;
+    return false;
+  }
+  else
+  {
+     
+    int tem = list_entry(list_max(&(cur_t->lockOwn), (list_less_func *)&lockCmpPri, NULL),struct lock, elem)->semaphore.priority;
+    cur_t->priority = (tem>cur_t->oldPriority)?tem:cur_t->oldPriority;
+    return (tem>cur_t->oldPriority);
+  }
+	return false;
+}
 
 
 

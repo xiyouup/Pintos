@@ -231,8 +231,23 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
+
+	if(lock->holder != NULL){
+		thread_current()->lockWait = lock;
+		donate(thread_current(), lock);
+		
+	}
+
+
+
   sema_down (&lock->semaphore);
   lock->holder = thread_current ();
+
+
+	thread_current()->lockWait = NULL;
+	list_push_back(&thread_current()->lockOwn, &lock->elem);
+
+
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -267,6 +282,8 @@ lock_release (struct lock *lock)
   ASSERT (lock_held_by_current_thread (lock));
 
   lock->holder = NULL;
+	list_remove(&lock->elem);
+	lockPriority(thread_current());
   sema_up (&lock->semaphore);
 }
 
@@ -387,6 +404,24 @@ bool semaCmpPri(const struct list_elem *e1, const struct list_elem *e2, void *au
   (void)aux;
   return (list_entry(e1, struct semaphore_elem, elem)->semaphore.priority) < (list_entry(e2, struct semaphore_elem, elem)->semaphore.priority);
 }
+
+
+void donate(struct thread *cur_t, struct lock *lock){
+  if(lock != NULL){
+  if(cur_t->priority > lock->semaphore.priority){
+    
+  lock->semaphore.priority = cur_t->priority;
+  
+  if(lockPriority(lock->holder)){
+    donate(lock->holder,lock->holder->lockWait);
+  }
+  
+
+  }
+  }
+}
+
+
 
 
 

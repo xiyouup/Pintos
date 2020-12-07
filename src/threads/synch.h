@@ -23,8 +23,10 @@ void sema_self_test (void);
 /* Lock. */
 struct lock 
   {
-    struct thread *holder;      /* Thread holding lock (for debugging). */
+    struct thread *holder;/* Thread holding lock (for debugging). */
     struct semaphore semaphore; /* Binary semaphore controlling access. */
+	struct list_elem elem;
+	
   };
 
 void lock_init (struct lock *);
@@ -47,6 +49,7 @@ void cond_broadcast (struct condition *, struct lock *);
 
 
 bool semaCmpPri(const struct list_elem *e1, const struct list_elem *e2, void *aux);
+void donate(struct thread *cur_t, struct lock *lock);
 
 /* Optimization barrier.
 

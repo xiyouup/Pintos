@@ -92,6 +92,9 @@ struct thread
 
 
 	int64_t sleepCount;//mydata
+	int oldPriority;
+	struct lock *lockWait;
+	struct list lockOwn;
 
 
     /* Shared between thread.c and synch.c. */
@@ -146,6 +149,9 @@ int thread_get_load_avg (void);
 
 void threadSleepCheck(struct thread *cur_t, void *aux);
 bool threadCmpPri(const struct list_elem *e1, const struct list_elem *e2, void *aux);
+
+bool lockPriority(struct thread *cur_t);
+bool lockCmpPri(const struct list_elem *e1, const struct list_elem *e2, void *aux);
 
 
 #endif /* threads/thread.h */
