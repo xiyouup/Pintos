@@ -73,6 +73,7 @@ sema_down (struct semaphore *sema)
     }
   sema->value--;
   intr_set_level (old_level);
+
 }
 
 /* Down or "P" operation on a semaphore, but only if the
@@ -109,14 +110,37 @@ void
 sema_up (struct semaphore *sema) 
 {
   enum intr_level old_level;
+	
+  ASSERT (sema != NULL);
+
+  old_level = intr_disable ();
+sema->value++;
+  if (!list_empty (&sema->waiters)) {
+    //thread_unblock (list_entry (list_pop_front (&sema->waiters),
+                                //struct thread, elem));
+	thread_unblock (list_entry(list_pop_max(&sema->waiters, (list_less_func *)&threadCmpPri, NULL),struct thread, elem));
+}
+	
+  
+
+  intr_set_level (old_level);
+
+}
+
+
+void
+sema_up_idle (struct semaphore *sema) 
+{
+  enum intr_level old_level;
 
   ASSERT (sema != NULL);
 
   old_level = intr_disable ();
+sema->value++;
   if (!list_empty (&sema->waiters)) 
-    thread_unblock (list_entry (list_pop_front (&sema->waiters),
+    thread_unblock_idle (list_entry (list_pop_front (&sema->waiters),
                                 struct thread, elem));
-  sema->value++;
+
   intr_set_level (old_level);
 }
 

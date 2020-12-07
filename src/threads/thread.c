@@ -240,6 +240,26 @@ thread_unblock (struct thread *t)
   list_push_back (&ready_list, &t->elem);
   t->status = THREAD_READY;
   intr_set_level (old_level);
+	if(t->priority > thread_current()->priority)
+	{
+		if(!intr_context ()){
+		thread_yield();
+		}
+	}
+}
+
+void
+thread_unblock_idle (struct thread *t) 
+{
+  enum intr_level old_level;
+
+  ASSERT (is_thread (t));
+
+  old_level = intr_disable ();
+  ASSERT (t->status == THREAD_BLOCKED);
+  list_push_back (&ready_list, &t->elem);
+  t->status = THREAD_READY;
+  intr_set_level (old_level);
 }
 
 /* Returns the name of the running thread. */
@@ -335,7 +355,11 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+	bool isY = (thread_current()->priority > new_priority);
   thread_current ()->priority = new_priority;
+	if(isY){
+		thread_yield();
+	}
 }
 
 /* Returns the current thread's priority. */
@@ -390,7 +414,7 @@ idle (void *idle_started_ UNUSED)
 {
   struct semaphore *idle_started = idle_started_;
   idle_thread = thread_current ();
-  sema_up (idle_started);
+  sema_up_idle (idle_started);
 
   for (;;) 
     {
@@ -464,6 +488,10 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
 
+
+	t->sleepCount = -1;
+	
+
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
@@ -493,7 +521,8 @@ next_thread_to_run (void)
   if (list_empty (&ready_list))
     return idle_thread;
   else
-    return list_entry (list_pop_front (&ready_list), struct thread, elem);
+    //return list_entry (list_pop_max (&ready_list), struct thread, elem);
+    return list_entry(list_pop_max(&ready_list, (list_less_func *)&threadCmpPri, NULL),struct thread, elem);
 }
 
 /* Completes a thread switch by activating the new thread's page
@@ -578,6 +607,41 @@ allocate_tid (void)
 
   return tid;
 }
+
+
+void threadSleepCheck(struct thread *cur_t, void *aux)
+{
+	(void)aux;
+	
+	if(cur_t->sleepCount >0)
+	{
+		cur_t->sleepCount--;
+	}
+	else if(cur_t->sleepCount == 0)
+	{
+		cur_t->sleepCount--;
+		
+		
+		
+		thread_unblock(cur_t);
+		
+	}
+}
+
+bool threadCmpPri(const struct list_elem *e1, const struct list_elem *e2, void *aux)
+{
+  (void)aux;
+  return (list_entry(e1, struct thread, elem)->priority) < (list_entry(e2, struct thread, elem)->priority);
+}
+
+
+
+
+
+
+
+
+
 
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */

@@ -90,6 +90,10 @@ struct thread
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
 
+
+	int64_t sleepCount;//mydata
+
+
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
@@ -118,6 +122,7 @@ tid_t thread_create (const char *name, int priority, thread_func *, void *);
 
 void thread_block (void);
 void thread_unblock (struct thread *);
+void thread_unblock_idle (struct thread *);
 
 struct thread *thread_current (void);
 tid_t thread_tid (void);
@@ -137,5 +142,11 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+
+void threadSleepCheck(struct thread *cur_t, void *aux);
+bool threadCmpPri(const struct list_elem *e1, const struct list_elem *e2, void *aux);
+//int max_priority(struct thread *cur_t);
+
 
 #endif /* threads/thread.h */
