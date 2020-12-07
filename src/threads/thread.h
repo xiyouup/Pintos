@@ -146,7 +146,6 @@ int thread_get_load_avg (void);
 
 void threadSleepCheck(struct thread *cur_t, void *aux);
 bool threadCmpPri(const struct list_elem *e1, const struct list_elem *e2, void *aux);
-//int max_priority(struct thread *cur_t);
 
 
 #endif /* threads/thread.h */

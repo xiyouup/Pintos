@@ -47,6 +47,7 @@ sema_init (struct semaphore *sema, unsigned value)
   ASSERT (sema != NULL);
 
   sema->value = value;
+	sema->priority = PRI_MIN;
   list_init (&sema->waiters);
 }
 
@@ -69,6 +70,9 @@ sema_down (struct semaphore *sema)
   while (sema->value == 0) 
     {
       list_push_back (&sema->waiters, &thread_current ()->elem);
+	if(thread_current ()->priority > sema->priority){
+		sema->priority = thread_current ()->priority;	
+	}
       thread_block ();
     }
   sema->value--;
@@ -119,6 +123,13 @@ sema->value++;
     //thread_unblock (list_entry (list_pop_front (&sema->waiters),
                                 //struct thread, elem));
 	thread_unblock (list_entry(list_pop_max(&sema->waiters, (list_less_func *)&threadCmpPri, NULL),struct thread, elem));
+	if(list_empty(&sema->waiters)){
+		sema->priority = PRI_MIN;
+	}
+	else
+	{
+		sema->priority = list_entry(list_max(&sema->waiters, (list_less_func *)&threadCmpPri, NULL),struct thread, elem)->priority;
+	}
 }
 	
   
@@ -341,8 +352,15 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED)
   ASSERT (lock_held_by_current_thread (lock));
 
   if (!list_empty (&cond->waiters)) 
-    sema_up (&list_entry (list_pop_front (&cond->waiters),
-                          struct semaphore_elem, elem)->semaphore);
+    //sema_up (&list_entry (list_pop_front (&cond->waiters),
+                          //struct semaphore_elem, elem)->semaphore);
+
+ sema_up (&list_entry (list_pop_max (&cond->waiters, (list_less_func *)&semaCmpPri, NULL),struct semaphore_elem, elem)->semaphore);
+
+
+	//sema_up (list_entry(list_pop_max(&cond->waiters, (list_less_func *)&semaCmpPri, NULL),struct semaphore_elem, elem)->semaphore));
+
+
 }
 
 /* Wakes up all threads, if any, waiting on COND (protected by
@@ -360,3 +378,16 @@ cond_broadcast (struct condition *cond, struct lock *lock)
   while (!list_empty (&cond->waiters))
     cond_signal (cond, lock);
 }
+
+
+
+
+bool semaCmpPri(const struct list_elem *e1, const struct list_elem *e2, void *aux)
+{
+  (void)aux;
+  return (list_entry(e1, struct semaphore_elem, elem)->semaphore.priority) < (list_entry(e2, struct semaphore_elem, elem)->semaphore.priority);
+}
+
+
+
+

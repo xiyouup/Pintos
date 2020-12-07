@@ -541,3 +541,6 @@ list_pop_max (struct list *list, list_less_func *less, void *aux)
 	list_remove (max);
   return max;
 }
+
+
+
