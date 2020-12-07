@@ -686,7 +686,10 @@ void updateAvg()
 void updateCpu(struct thread *cur_t , void *aux)
 {
   (void)aux;
-  cur_t->rCpu =    ((cur_t->rCpu*(load_avg<<1))/((load_avg<<1)+1)) + (cur_t->nice<<16);
+	
+  //cur_t->rCpu =    ((cur_t->rCpu*(load_avg<<1))/((load_avg<<1)+1)) + (cur_t->nice<<16);
+	int64_t avg = load_avg;
+	cur_t->rCpu = ((avg<<1)*cur_t->rCpu)/((avg<<1)+(1<<16))  +  (cur_t->nice<<16);
 }
 
 void updatePri(struct thread *cur_t , void *aux)
