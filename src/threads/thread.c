@@ -92,7 +92,7 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
-
+	load_avg = 0;
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   init_thread (initial_thread, "main", PRI_DEFAULT);
@@ -372,9 +372,16 @@ thread_get_priority (void)
 
 /* Sets the current thread's nice value to NICE. */
 void
-thread_set_nice (int nice UNUSED) 
+thread_set_nice (int nice) 
 {
   /* Not yet implemented. */
+  //if(nice > 20)
+  //thread_current()->nice = 20;
+  //else if(nice > -20)
+  thread_current()->nice = nice;
+  //else
+  //thread_current()->nice = -20;
+  
 }
 
 /* Returns the current thread's nice value. */
@@ -382,7 +389,8 @@ int
 thread_get_nice (void) 
 {
   /* Not yet implemented. */
-  return 0;
+  
+  return thread_current()->nice;
 }
 
 /* Returns 100 times the system load average. */
@@ -390,7 +398,7 @@ int
 thread_get_load_avg (void) 
 {
   /* Not yet implemented. */
-  return 0;
+  return ((load_avg*100)>>16);
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
@@ -398,7 +406,7 @@ int
 thread_get_recent_cpu (void) 
 {
   /* Not yet implemented. */
-  return 0;
+  return ((thread_current()->rCpu*100)>>16);
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -494,7 +502,8 @@ init_thread (struct thread *t, const char *name, int priority)
 	t->oldPriority = priority;
 	t->lockWait = NULL;
 	list_init(&t->lockOwn);
-	
+	t->nice = 0;
+	t->rCpu = 0;
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
@@ -662,7 +671,36 @@ bool lockPriority(struct thread *cur_t)
 	return false;
 }
 
+void IncreaseCpu()
+{
+  if(thread_current() != idle_thread)
+  {
+    thread_current()->rCpu = thread_current()->rCpu + (1<<16);
+  }
+}
+void updateAvg()
+{
+  int ready = list_size(&ready_list) + (int)(thread_current() != idle_thread);
+  load_avg = ((load_avg*59)/60) + (ready<<16)/60;
+}
+void updateCpu(struct thread *cur_t , void *aux)
+{
+  (void)aux;
+  cur_t->rCpu =    ((cur_t->rCpu*(load_avg<<1))/((load_avg<<1)+1)) + (cur_t->nice<<16);
+}
 
+void updatePri(struct thread *cur_t , void *aux)
+{
+  (void)aux;
+  int tem = (PRI_MAX<<16) - (cur_t->rCpu>>2) - (cur_t->nice<<17);
+  if(tem>(PRI_MAX<<16))
+    cur_t->priority = (PRI_MAX<<16);
+  else if(tem > (PRI_MIN<<16))
+    cur_t->priority = tem;
+  else
+    cur_t->priority = (PRI_MIN<<16);
+  
+}
 
 
 

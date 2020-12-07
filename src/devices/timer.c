@@ -180,6 +180,19 @@ timer_interrupt (struct intr_frame *args UNUSED)
   ticks++;
 
 	thread_foreach(threadSleepCheck, NULL);
+  if(thread_mlfqs)
+  {
+    IncreaseCpu();
+    if(ticks % TIMER_FREQ == 0)
+    {
+      updateAvg();
+      thread_foreach(updateCpu, NULL);
+    }
+    if(ticks % 4 == 0)
+    {
+      thread_foreach(updatePri, NULL);
+    }
+  }
 
   thread_tick ();
 }

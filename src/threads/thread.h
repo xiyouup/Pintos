@@ -5,6 +5,8 @@
 #include <list.h>
 #include <stdint.h>
 
+int load_avg;
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -95,6 +97,8 @@ struct thread
 	int oldPriority;
 	struct lock *lockWait;
 	struct list lockOwn;
+	int nice;
+	int rCpu;
 
 
     /* Shared between thread.c and synch.c. */
@@ -152,6 +156,11 @@ bool threadCmpPri(const struct list_elem *e1, const struct list_elem *e2, void *
 
 bool lockPriority(struct thread *cur_t);
 bool lockCmpPri(const struct list_elem *e1, const struct list_elem *e2, void *aux);
+
+void IncreaseCpu(void);
+void updateAvg(void);
+void updateCpu(struct thread *cur_t , void *aux);
+void updatePri(struct thread *cur_t , void *aux);
 
 
 #endif /* threads/thread.h */
